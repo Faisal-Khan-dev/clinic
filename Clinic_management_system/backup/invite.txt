@@ -1,0 +1,436 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { BASE_URL } from "@/services/config";
+import toast from "react-hot-toast";
+
+const InviteUserPage = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    gender: "",
+    role: "",
+    profileImage: null,
+  });
+
+  const [rooms, setRooms] = useState([]);
+  const [doctorFields, setDoctorFields] = useState({
+    specialization: "",
+    qualification: "",
+    experience: "",
+    availableDays: [],
+    availableTime: { start: "", end: "" },
+    fees: "",
+    roomId: "",
+  });
+  const [staffFields, setStaffFields] = useState({
+    designation: "",
+    shiftTiming: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/room/all`);
+        console.log("res ==>", res);
+
+        setRooms(res.data);
+      } catch (error) {
+        console.error("Room fetch error:", error);
+      }
+    };
+    fetchRooms();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "profileImage") {
+      setFormData({ ...formData, profileImage: files[0] });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const handleDoctorChange = (e) => {
+    const { name, value } = e.target;
+    setDoctorFields({ ...doctorFields, [name]: value });
+  };
+
+  const handleAvailableDaysChange = (e) => {
+    const { value, checked } = e.target;
+    setDoctorFields((prev) => {
+      let updatedDays = [...prev.availableDays];
+      if (checked) updatedDays.push(value);
+      else updatedDays = updatedDays.filter((day) => day !== value);
+      return { ...prev, availableDays: updatedDays };
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const form = new FormData();
+    Object.entries(formData).forEach(([key, val]) => form.append(key, val));
+
+    if (formData.role === "doctor") {
+      Object.entries(doctorFields).forEach(([key, val]) =>
+        form.append(key, typeof val === "object" ? JSON.stringify(val) : val)
+      );
+    }
+
+    if (formData.role === "staff") {
+      Object.entries(staffFields).forEach(([key, val]) =>
+        form.append(key, val)
+      );
+    }
+
+    try {
+      // const res = await axios.post(`${BASE_URL}/auth/invite`, form, {
+      //   headers: { "Content-Type": "multipart/form-data" },
+      // });
+      toast.success("suces");
+    } catch (error) {
+      console.error("Invite error:", error);
+      alert("Error inviting user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartTimeChange = (e) => {
+    const value = e.target.value;
+    // block anything before 10:00 or after 20:00
+    if (value < "10:00" || value > "20:00") {
+      toast.error("Start time must be between 10:00 AM and 8:00 PM");
+      return;
+    }
+    setDoctorFields((prev) => ({
+      ...prev,
+      availableTime: {
+        ...prev.availableTime,
+        start: value,
+      },
+    }));
+  };
+
+  const handleEndTimeChange = (e) => {
+    const value = e.target.value;
+    // block anything before 10:00 or after 20:00
+    if (value < "10:00" || value > "20:00") {
+      toast.error("End time must be between 10:00 AM and 8:00 PM");
+      return;
+    }
+
+    // also ensure end >= start
+    if (
+      doctorFields.availableTime.start &&
+      value <= doctorFields.availableTime.start
+    ) {
+      toast.error("End time must be after start time");
+      return;
+    }
+
+    setDoctorFields((prev) => ({
+      ...prev,
+      availableTime: {
+        ...prev.availableTime,
+        end: value,
+      },
+    }));
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-background backdrop-blur-lg shadow-xl rounded-2xl p-8 w-full max-w-3xl border border-gray-200"
+      >
+        <h1 className="text-3xl font-semibold text-center text-primary mb-8">
+          Invite New User
+        </h1>
+
+        {/* COMMON FIELDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Name
+            </label>
+            <input
+              name="name"
+              onChange={handleChange}
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Email
+            </label>
+            <input
+              name="email"
+              type="email"
+              onChange={handleChange}
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Phone
+            </label>
+            <input
+              name="phone"
+              onChange={handleChange}
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Gender
+            </label>
+            <select
+              name="gender"
+              onChange={handleChange}
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+            >
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Role
+            </label>
+            <select
+              name="role"
+              onChange={handleChange}
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+            >
+              <option value="">Select Role</option>
+              <option value="doctor">Doctor</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Profile Image
+            </label>
+            <input
+              type="file"
+              name="profileImage"
+              onChange={handleChange}
+              className="mt-1 w-full text-sm text-gray-700 border border-gray-300 rounded-md cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* DOCTOR FIELDS */}
+        {formData.role === "doctor" && (
+          <div className="mt-8 p-4 border-t border-gray-300">
+            <h3 className="text-xl font-semibold text-indigo-600 mb-4">
+              Doctor Details
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <input
+                name="specialization"
+                placeholder="Specialization"
+                onChange={handleDoctorChange}
+                className="rounded-md border px-3 py-2"
+              />
+              <input
+                name="qualification"
+                placeholder="Qualification"
+                onChange={handleDoctorChange}
+                className="rounded-md border px-3 py-2"
+              />
+              <input
+                name="experience"
+                placeholder="Experience (Years)"
+                onChange={handleDoctorChange}
+                className="rounded-md border px-3 py-2"
+              />
+              <input
+                name="fees"
+                placeholder="Consultation Fee"
+                onChange={handleDoctorChange}
+                className="rounded-md border px-3 py-2"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="block font-medium text-gray-700">
+                Available Days
+              </label>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {[
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday",
+                ].map((day) => (
+                  <label
+                    key={day}
+                    className="flex items-center gap-1 text-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      value={day}
+                      onChange={handleAvailableDaysChange}
+                      className="text-indigo-500 focus:ring-indigo-400"
+                    />
+                    {day}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* <div className="mt-4 grid grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-600">
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  onChange={(e) =>
+                    setDoctorFields((prev) => ({
+                      ...prev,
+                      availableTime: {
+                        ...prev.availableTime,
+                        start: e.target.value,
+                      },
+                    }))
+                  }
+                  className="mt-1 w-full border rounded-md px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  onChange={(e) =>
+                    setDoctorFields((prev) => ({
+                      ...prev,
+                      availableTime: {
+                        ...prev.availableTime,
+                        end: e.target.value,
+                      },
+                    }))
+                  }
+                  className="mt-1 w-full border rounded-md px-3 py-2"
+                />
+              </div>
+            </div> */}
+
+            <div className="mt-4 grid grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-600">
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  value={doctorFields.availableTime.start}
+                  min="10:00"
+                  max="20:00"
+                  onChange={handleStartTimeChange}
+                  className="mt-1 w-full border rounded-md px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  value={doctorFields.availableTime.end}
+                  min="10:00"
+                  max="20:00"
+                  onChange={handleEndTimeChange}
+                  className="mt-1 w-full border rounded-md px-3 py-2"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-600">
+                Select Room
+              </label>
+              <select
+                name="roomId"
+                value={doctorFields.roomId}
+                onChange={handleDoctorChange}
+                className="mt-1 w-full border rounded-md px-3 py-2"
+              >
+                <option value="">Select Room</option>
+                {rooms.map((room) => (
+                  <option key={room._id} value={room._id}>
+                    {room.roomNumber}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* STAFF FIELDS */}
+        {formData.role === "staff" && (
+          <div className="mt-8 p-4 border-t border-gray-300">
+            <h3 className="text-xl font-semibold text-indigo-600 mb-4">
+              Staff Details
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <input
+                name="designation"
+                placeholder="Designation"
+                onChange={(e) =>
+                  setStaffFields({
+                    ...staffFields,
+                    designation: e.target.value,
+                  })
+                }
+                className="rounded-md border px-3 py-2"
+              />
+              <input
+                name="shiftTiming"
+                placeholder="Shift Timing (e.g. 9AM - 6PM)"
+                onChange={(e) =>
+                  setStaffFields({
+                    ...staffFields,
+                    shiftTiming: e.target.value,
+                  })
+                }
+                className="rounded-md border px-3 py-2"
+              />
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className={`mt-8 w-full bg-primary text-white py-3 rounded-md text-lg font-medium hover:bg-indigo-700 transition-all duration-300
+            ${loading && "cursor-not-allowed"}`}
+          disabled={loading}
+        >
+          Send Invite
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default InviteUserPage;

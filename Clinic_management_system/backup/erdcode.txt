@@ -1,0 +1,148 @@
+//////////////////////////////////////////////////////////////
+// ================== USER TABLE ==================
+//////////////////////////////////////////////////////////////
+Table User {
+  _id ObjectId [pk]
+  name string [not null]
+  email string [not null, unique]
+  password string [not null]
+  role string [note: 'enum: admin, doctor, staff, patient', default: "patient"]
+  phone string
+  gender string [note: 'enum: male, female, other']
+  profileImage string
+  status string [note: 'enum: active, inactive', default: "active"]
+  resetToken string
+  resetTokenExpiry datetime
+  inviteToken string
+  isVerified boolean [default: false]
+  createdBy ObjectId [ref: > User._id]
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== ROOM TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Room {
+  _id ObjectId [pk]
+  roomNumber int [not null, unique]
+  currentDoctor ObjectId [ref: > Doctor._id]
+  status string [note: 'enum: available, occupied', default: "available"]
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== DOCTOR TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Doctor {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > User._id, not null]
+  specialization string [not null]
+  departmentId ObjectId [ref: > Department._id]
+  qualification string
+  experience int
+  availableDays string[]
+  availableTime_start string
+  availableTime_end string
+  fees int
+  roomId ObjectId [ref: > Room._id]
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== PATIENT TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Patient {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > User._id, not null]
+  age int
+  bloodGroup string
+  address string
+  medicalHistory string[]
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== STAFF TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Staff {
+  _id ObjectId [pk]
+  userId ObjectId [ref: > User._id, not null]
+  departmentId ObjectId [ref: > Department._id]
+  designation string
+  shiftTiming string
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== DEPARTMENT TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Department {
+  _id ObjectId [pk]
+  name string [not null]
+  description string
+  createdBy ObjectId [ref: > User._id]
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== APPOINTMENT TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Appointment {
+  _id ObjectId [pk]
+  patientId ObjectId [ref: > Patient._id, not null]
+  doctorId ObjectId [ref: > Doctor._id, not null]
+  roomId ObjectId [ref: > Room._id]
+  appointmentDate datetime [not null]
+  timeSlot string
+  reason string
+  status string [note: 'enum: pending, confirmed, completed, cancelled', default: "pending"]
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== PRESCRIPTION TABLE ==================
+//////////////////////////////////////////////////////////////
+Table CaseHistory {
+  _id ObjectId [pk]
+  appointmentId ObjectId [ref: > Appointment._id, not null]
+  doctorId ObjectId [ref: > Doctor._id, not null]
+  patientId ObjectId [ref: > Patient._id, not null]
+  medicines JSON
+  notes string
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== MEDICAL REPORT TABLE ==================
+//////////////////////////////////////////////////////////////
+Table MedicalReport {
+  _id ObjectId [pk]
+  patientId ObjectId [ref: > Patient._id, not null]
+  doctorId ObjectId [ref: > Doctor._id]
+  reportType string
+  fileUrl string
+  description string
+  createdAt datetime
+  updatedAt datetime
+}
+
+//////////////////////////////////////////////////////////////
+// ================== PAYMENT TABLE ==================
+//////////////////////////////////////////////////////////////
+Table Payment {
+  _id ObjectId [pk]
+  appointmentId ObjectId [ref: > Appointment._id]
+  amount int [not null]
+  method string [note: 'enum: cash, card, online', not null]
+  status string [note: 'enum: paid, pending, failed', default: "pending"]
+  createdAt datetime
+  updatedAt datetime
+}
